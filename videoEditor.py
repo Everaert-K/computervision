@@ -56,13 +56,24 @@ def main():
                 frame[np.where(frame[:,:,0]>10)] = [0,255,0]
                 frame = cv2.GaussianBlur(frame,(5,5),cv2.BORDER_DEFAULT)
             
-            if between(cap,0,20):
+            if between(cap,40,60):
+                # detects cicles
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 circles = cv2.HoughCircles(frame,cv2.HOUGH_GRADIENT,1,20,param1=50,param2=30,minRadius=0,maxRadius=0)
                 circles = np.uint16(np.around(circles))
                 for i in circles[0,:]:
                     # draw the outer circle
                     cv2.circle(frame,(i[0],i[1]),i[2],(0,255,0),2)
+
+            if between(cap,0,20):
+                colorLow = np.array([20,20,20])  
+                colorHigh = np.array([120,120,120])  
+                mask = cv2.inRange(frame, colorLow, colorHigh)
+                contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                contour_sizes = [(cv2.contourArea(contour), contour) for contour in contours]
+                biggest_contour = max(contour_sizes, key=lambda x: x[0])[1] 
+                x,y,w,h = cv2.boundingRect(biggest_contour) 
+                cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
 
             #if between(cap,0,2) or between(cap,4,5):
                 #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
