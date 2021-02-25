@@ -16,8 +16,8 @@ def between(cap, lower: int, upper: int) -> bool:
 
 
 def main():
-    input_video_file = '/home/karel/Downloads/video-1613578983.mp4'
-    output_video_file = '/home/karel/Downloads/video-1613578983_bewerkt.MOV'
+    input_video_file = '/home/karel/Documents/computervision/video_cv_small.mp4'
+    output_video_file = '/home/karel/Documents/computervision/AwesomeVideo.mp4'
     # OpenCV video objects to work with
     cap = cv2.VideoCapture(input_video_file)
     fps = int(round(cap.get(5)))
@@ -36,16 +36,44 @@ def main():
         if ret:
             if cv2.waitKey(28) & 0xFF == ord('q'):
                 break
+            """
+            elif between(cap,0,2) or between(cap,4,5):
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                cv2.putText(frame, 'gray', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+            elif between(cap, 2, 4):
+                cv2.putText(frame, 'color', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
 
-            # Grab your object in RGB and HSV color space.
-            # Choose a color space and try to improve your grabbing (e.g.fill  holes,  undetected  edges)
-            # by  using  binary  morphological  operations.
-            # Put  the  improvements in a different color
-            # if between(cap,0,10):
-            #    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            elif between(cap,5,7):
+                frame = cv2.GaussianBlur(frame,(5,5),cv2.BORDER_DEFAULT)
+                cv2.putText(frame, 'GaussianBlur with kernel (5,5)', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+            elif between(cap,7,12):
+                frame = cv2.GaussianBlur(frame,(11,11),cv2.BORDER_DEFAULT)
+                cv2.putText(frame, 'GaussianBlur with kernel (11,11)', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+                cv2.putText(frame, 'Bigger kernel = more smoothing', (50, 500), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+            elif between(cap,10,13):
+                frame = cv2.bilateralFilter(frame,15,80,80)
+                cv2.putText(frame, 'bi-lateral', (20, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+                cv2.putText(frame, 'No averaging across edges', (50, 300), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+                cv2.putText(frame, 'd = 15', (50, 500), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+            elif between(cap,22,25):
+                frame = cv2.bilateralFilter(frame,20,80,80)
+                cv2.putText(frame, 'bi-lateral', (20, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+                cv2.putText(frame, ' d = 20 => more smoothing', (20, 500), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+            if between(cap,31,40):
+                # grabbing the object in HSV space
+                GREEN_MIN = np.array([50, 100, 100], np.uint8)
+                GREEN_MAX = np.array([70, 255, 255], np.uint8)
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                frame = cv2.inRange(frame, GREEN_MIN, GREEN_MAX)
+            if between(cap,40,43):
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 # Show binary frames with the foreground object in white and background in black.
-            #    ret2,frame = cv2.threshold(frame, 100, 255, cv2.THRESH_BINARY_INV) # cv.THRESH_TRUNC can make stuff disapear
+                cv2.putText(frame, 'Method 2', (20, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+                ret2,frame = cv2.threshold(frame, 100, 255, cv2.THRESH_BINARY_INV) # cv.THRESH_TRUNC can make stuff disapear
+            """
 
+
+            """
             if between(cap, 20, 40):
                 # detect vertical edges
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -82,25 +110,25 @@ def main():
                 cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
             
             if between(cap, 0, 20):
-                # Initiate STAR detector
-                orb = cv2.ORB()
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                # find the keypoints with ORB
-                kp, desc = orb.detectAndCompute(frame,None)
-                # draw only keypoints location,not size and orientation
-                # frame = cv2.drawKeypoints(frame, kp, color=(0, 255, 0), flags=0)
+                # use feature extraction to find object in video
+                feature_img = cv2.imread('/home/karel/Downloads/green.jpg') 
+                feature_img_bw = cv2.cvtColor(feature_img,cv2.COLOR_BGR2GRAY) 
 
-            # if between(cap,0,2) or between(cap,4,5):
-                #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            # elif between(cap,5,7):
-                #frame = cv2.GaussianBlur(frame,(5,5),cv2.BORDER_DEFAULT)
-                #cv2.putText(frame, 'GaussianBlur with kernel (5,5)', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
-            # elif between(cap,8,10):
-                #frame = cv2.GaussianBlur(frame,(11,11),cv2.BORDER_DEFAULT)
-                #cv2.putText(frame, 'GaussianBlur with kernel (11,11)', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
-            # elif between(cap,11,13):
-                #frame = cv2.bilateralFilter(frame,15,80,80)
-                #cv2.putText(frame, 'bi-lateral', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+                frame_img_bw = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
+
+                orb = cv2.ORB_create() 
+
+                featureKeypoints, featureDescriptors = orb.detectAndCompute(feature_img_bw,None) 
+                frameKeypoints, frameDescriptors = orb.detectAndCompute(frame_img_bw,None) 
+
+                matcher = cv2.BFMatcher() 
+                matches = matcher.match(featureDescriptors,frameDescriptors) 
+
+                # TO DO: Find a way to use the feature matches to find the object and draw a box around it
+
+                # frame = cv2.drawMatches(feature_img, featureKeypoints, train_img, trainKeypoints, matches[:20],None)
+                frame = cv2.drawKeypoints(feature_img, featureKeypoints, outImage = None, color=(0, 255, 0), flags=0)  
+            """
 
             # write frame that you processed to output
             out.write(frame)
