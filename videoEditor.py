@@ -6,6 +6,7 @@ import argparse
 import cv2
 import sys
 import numpy as np
+from random import randint
 
 
 # helper function to change what you do based on video seconds
@@ -70,45 +71,58 @@ def main():
                 # Show binary frames with the foreground object in white and background in black.
                 cv2.putText(frame, 'Method 2', (20, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
                 ret2,frame = cv2.threshold(frame, 100, 255, cv2.THRESH_BINARY_INV) # cv.THRESH_TRUNC can make stuff disapear
-            """
-
-
-            """
-            if between(cap, 20, 40):
+            if between(cap, 44, 50):
                 # detect vertical edges
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 sobel_x = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
-                sobel_y = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
                 frame = cv2.filter2D(frame, -1, sobel_x)
                 frame = cv2.GaussianBlur(frame, (5, 5), cv2.BORDER_DEFAULT)
                 frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
                 # frame[np.where((frame==[0,0,0]).all(axis=2))] = [255,165,0]
                 frame[np.where(frame[:, :, 0] > 10)] = [0, 255, 0]
                 frame = cv2.GaussianBlur(frame, (5, 5), cv2.BORDER_DEFAULT)
-
-            if between(cap, 40, 60):
-                # detects cicles
+                cv2.putText(frame, 'Detect Vertical edges', (20, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+            if between(cap, 50, 53):
+                # detect horizontal edges
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                circles = cv2.HoughCircles(
-                    frame, cv2.HOUGH_GRADIENT, 1, 20, param1=50, param2=30, minRadius=0, maxRadius=0)
-                circles = np.uint16(np.around(circles))
-                for i in circles[0, :]:
-                    # draw the outer circle
-                    cv2.circle(frame, (i[0], i[1]), i[2], (0, 255, 0), 2)
-
-            if between(cap, 20, 40):
+                sobel_y = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
+                frame = cv2.filter2D(frame, -1, sobel_y)
+                frame = cv2.GaussianBlur(frame, (5, 5), cv2.BORDER_DEFAULT)
+                frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
+                # frame[np.where((frame==[0,0,0]).all(axis=2))] = [255,165,0]
+                frame[np.where(frame[:, :, 0] > 10)] = [0, 255, 0]
+                frame = cv2.GaussianBlur(frame, (5, 5), cv2.BORDER_DEFAULT)
+                cv2.putText(frame, 'Detect Horizontal edges', (20, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+            if between(cap, 76, 83):
+                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                frame_gray = cv2.blur(frame_gray, (3, 3))
+                detected_circles = cv2.HoughCircles(frame_gray, cv2.HOUGH_GRADIENT, 1, 20, param1=50, param2=30, minRadius=1,maxRadius=40)
+                if detected_circles is not None:
+                    detected_circles = np.uint16(np.around(detected_circles))
+                    for pt in detected_circles[0, :]:
+                        a, b, r = pt[0], pt[1], pt[2]
+                        color = (randint(100, 255), randint(100, 255), randint(100, 255))
+                        cv2.circle(frame, (a, b), r, color, 2)
+            if between(cap, 76 , 83):
                 # box around object
                 colorLow = np.array([20, 20, 20])
                 colorHigh = np.array([120, 120, 120])
+
                 mask = cv2.inRange(frame, colorLow, colorHigh)
-                contours, hierarchy = cv2.findContours(
-                    mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-                contour_sizes = [(cv2.contourArea(contour), contour)
-                                 for contour in contours]
+
+                contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                contour_sizes = [(cv2.contourArea(contour), contour)for contour in contours]
                 biggest_contour = max(contour_sizes, key=lambda x: x[0])[1]
                 x, y, w, h = cv2.boundingRect(biggest_contour)
-                cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            
+                color = (randint(100, 255), randint(100, 255), randint(100, 255))
+                cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+            """
+
+            if between(cap,83,90):
+                # gray scale,with the intensity values proportional to the likelihood of the object of interest being at that location
+                print("yeet")
+
+            """           
             if between(cap, 0, 20):
                 # use feature extraction to find object in video
                 feature_img = cv2.imread('/home/karel/Downloads/green.jpg') 
