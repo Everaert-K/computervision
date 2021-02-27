@@ -21,13 +21,28 @@ def main():
     output_video_file = '/home/karel/Documents/computervision/AwesomeVideo.mp4'
     # OpenCV video objects to work with
     cap = cv2.VideoCapture(input_video_file)
+
+    """
     fps = int(round(cap.get(5)))
     frame_width = int(cap.get(3))
     frame_height = int(cap.get(4))
+    """
+
+    # Find width, height and Frames-per-second of the video
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    FPS = int(cap.get(cv2.CAP_PROP_FPS))
+
+    # Create a Video writer
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter('check.mp4', fourcc, FPS, (width, height))
+
+    """
     # saving output video as .mp4
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_video_file, fourcc, fps,
-                          (frame_width, frame_height))
+    out = cv2.VideoWriter(output_video_file, fourcc, fps, (frame_width, frame_height))
+    """
+
 
     font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -37,7 +52,7 @@ def main():
         if ret:
             if cv2.waitKey(28) & 0xFF == ord('q'):
                 break
-            """
+
             elif between(cap,0,2) or between(cap,4,5):
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 cv2.putText(frame, 'gray', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
@@ -116,16 +131,38 @@ def main():
                 x, y, w, h = cv2.boundingRect(biggest_contour)
                 color = (randint(100, 255), randint(100, 255), randint(100, 255))
                 cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+
+            """
+            if between(cap,83,90): # 83
+                # gray scale,with the intensity values proportional to the likelihood of the object of interest being at that location
+                frame_gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+                feature_img = cv2.imread('/home/karel/Documents/computervision/green.jpg')
+                feature_img = cv2.cvtColor(feature_img, cv2.COLOR_BGR2GRAY)
+                frame = cv2.matchTemplate(frame_gray,feature_img,cv2.TM_SQDIFF_NORMED) # error in this method
+
+                frame = np.uint8(frame)
+                # frame = cv2.cvtColor(frame, cv2.COLOR_HSV2BGR)
             """
 
-            if between(cap,83,90):
-                # gray scale,with the intensity values proportional to the likelihood of the object of interest being at that location
-                print("yeet")
+            if between(cap,97,100): # 97
+                cv2.putText(frame, 'Ball', (20, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+                frame[thresh == 255] = 0
+                kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+                erosion = cv2.erode(frame, kernel, iterations=1)
+            if between(cap,101,1025): # 97
+                cv2.putText(frame, 'Ball', (20, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+                frame[thresh == 255] = 100
+                kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+                erosion = cv2.erode(frame, kernel, iterations=1)
 
             """           
             if between(cap, 0, 20):
                 # use feature extraction to find object in video
-                feature_img = cv2.imread('/home/karel/Downloads/green.jpg') 
+                feature_img = cv2.imread('/home/karel/Documents/computervision/green.jpg') 
                 feature_img_bw = cv2.cvtColor(feature_img,cv2.COLOR_BGR2GRAY) 
 
                 frame_img_bw = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
@@ -148,7 +185,7 @@ def main():
             out.write(frame)
 
             # (optional) display the resulting frame
-            cv2.imshow('Frame', frame)
+            # cv2.imshow('Frame', frame)
 
             # Press Q on keyboard to  exit
             if cv2.waitKey(25) & 0xFF == ord('q'):
