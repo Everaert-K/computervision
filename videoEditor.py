@@ -13,33 +13,43 @@ def between(cap, lower: int, upper: int) -> bool:
     framespersecond = int(cap.get(cv2.CAP_PROP_FPS))
     return lower <= int(2*frame/framespersecond) < upper
 
-
 def HSVthresholding(frame):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    # Red Filter
-    lower_red = np.array([50, 100, 100], np.uint8)
-    upper_red = np.array([70, 255, 255], np.uint8)
-    mask = cv2.inRange(hsv, lower_red, upper_red)
+    GREEN_MIN = np.array([50, 100, 100], np.uint8)
+    GREEN_MAX = np.array([70, 255, 255], np.uint8)
+    mask = cv2.inRange(hsv, GREEN_MIN, GREEN_MAX)
     frame_ = cv2.bitwise_and(frame, frame, mask=mask)
-    return frame_
-
-def dilate(img):
-    img = HSVthresholding(img)
-    # Apply a Kernel 30x30
-    kernel = np.ones((5, 5), np.uint8)
-    dilation = cv2.dilate(img, kernel, iterations=1)
-    return dilation
+    return frame
 
 
-# Function that applies morphological operations (Opening) to improve grabbing
-def morphOp_Opening(img):
-    img = HSVthresholding(img)
-    # Apply a Kernel 30x30
-    kernel = np.ones((5, 5), np.uint8)
-    opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+def MatchingOperation(img, templ='red.png', thres=0.9):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    template = cv2.imread(templ, 0)
+    w, h = template.shape[::-1]
+    method = cv2.TM_SQDIFF_NORMED
+    res = cv2.matchTemplate(gray, template, method)
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+    top_left = min_loc
+    bottom_right = (top_left[0] + w, top_left[1] + h)
+    cv2.rectangle(img, top_left, bottom_right, 255, 2)
+    threshold = thres
+    loc = np.where(res >= threshold)
+    for pt in zip(*loc[::-1]):
+        cv2.rectangle(img, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
+    return img
 
-    return opening
 
+def MatchingOperationRes(img, width=608, height=1080, templ='template.png'):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    template = cv2.imread(templ, 0)
+    dim = (width,height)
+    template = cv2.resize(template, dim, interpolation=cv2.INTER_AREA)
+    w, h = template.shape[::-1]
+    method = cv2.TM_SQDIFF_NORMED
+    # Apply template Matching
+    res = cv2.matchTemplate(gray, template, method)
+    res = cv2.resize(res, dim, interpolation=cv2.INTER_AREA)
+    return res
 
 def main():
     input_video_file = '/home/karel/Documents/computervision/video_cv_small.mp4'
@@ -96,26 +106,31 @@ def main():
                 frame = cv2.inRange(frame, GREEN_MIN, GREEN_MAX)
                 frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
                 cv2.putText(frame, 'Capturing the object in HSV space', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
-
-            elif between(cap,35,40):
+            if between(cap,35,40): # start 35
                 # improving the grabbing
-                frame = dilate(frame)
-                frame = morphOp_Opening(frame)
+
+                # dilation
+                frame = HSVthresholding(frame)
+                kernel = np.ones((5, 5), np.uint8)
+                frame = cv2.dilate(frame, kernel, iterations=1)
+
+                # morphological operations (Opening)
+                kernel = np.ones((5, 5), np.uint8)
+                frame = cv2.morphologyEx(frame, cv2.MORPH_OPEN, kernel)
+
                 GREEN_MIN = np.array([50, 100, 100], np.uint8)
                 GREEN_MAX = np.array([70, 255, 255], np.uint8)
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
                 frame = cv2.inRange(frame, GREEN_MIN, GREEN_MAX)
                 frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
-                cv2.putText(frame, 'Improved grabbing', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
-
+                cv2.putText(frame, 'Morphological operations', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
             elif between(cap,40,46):
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 # Show binary frames with the foreground object in white and background in black.
                 cv2.putText(frame, 'Method 2', (20, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
                 ret2,frame = cv2.threshold(frame, 100, 255, cv2.THRESH_BINARY_INV) # cv.THRESH_TRUNC can make stuff disapear
-
                 frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB) # might have to be removed
-            elif between(cap, 46, 52):
+            elif between(cap, 46, 50):
                 # detect vertical edges
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 sobel_x = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
@@ -126,7 +141,7 @@ def main():
                 frame[np.where(frame[:, :, 0] > 10)] = [0, 255, 0]
                 frame = cv2.GaussianBlur(frame, (5, 5), cv2.BORDER_DEFAULT)
                 cv2.putText(frame, 'Detect Vertical edges', (20, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
-            elif between(cap, 52, 57):
+            elif between(cap, 50, 53):
                 # detect horizontal edges
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 sobel_y = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
@@ -137,7 +152,7 @@ def main():
                 frame[np.where(frame[:, :, 0] > 10)] = [0, 255, 0]
                 frame = cv2.GaussianBlur(frame, (5, 5), cv2.BORDER_DEFAULT)
                 cv2.putText(frame, 'Detect Horizontal edges', (20, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
-            elif between(cap, 57 , 63):
+            elif between(cap, 53 , 58):
                 # box around object
                 colorLow = np.array([20, 20, 20])
                 colorHigh = np.array([120, 120, 120])
@@ -150,22 +165,9 @@ def main():
                 cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
                 cv2.putText(frame, 'Draw a box around the target', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
 
-            """
-            elif between(cap,63,76):
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                template = cv2.imread("green2.jpg", 0)
-                w, h = template.shape[::-1]
-                res = cv2.matchTemplate(gray, template, cv2.TM_SQDIFF_NORMED)
-                min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-                top_left = min_loc
-                bottom_right = (top_left[0] + w, top_left[1] + h)
-                cv2.rectangle(frame, top_left, bottom_right, 255, 2)
-                threshold = 0.6 # 0.9
-                loc = np.where(res >= threshold)
-                for pt in zip(*loc[::-1]):
-                    cv2.rectangle(frame, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
-                cv2.putText(frame, 'Detect object using features', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
-            """
+            if between(cap,58,63):
+                frame = MatchingOperation(frame)
+                # frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
 
             if between(cap, 76, 86):
                 frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
