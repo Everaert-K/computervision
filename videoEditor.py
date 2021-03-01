@@ -14,6 +14,33 @@ def between(cap, lower: int, upper: int) -> bool:
     return lower <= int(2*frame/framespersecond) < upper
 
 
+def HSVthresholding(frame):
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    # Red Filter
+    lower_red = np.array([50, 100, 100], np.uint8)
+    upper_red = np.array([70, 255, 255], np.uint8)
+    mask = cv2.inRange(hsv, lower_red, upper_red)
+    frame_ = cv2.bitwise_and(frame, frame, mask=mask)
+    return frame_
+
+def dilate(img):
+    img = HSVthresholding(img)
+    # Apply a Kernel 30x30
+    kernel = np.ones((5, 5), np.uint8)
+    dilation = cv2.dilate(img, kernel, iterations=1)
+    return dilation
+
+
+# Function that applies morphological operations (Opening) to improve grabbing
+def morphOp_Opening(img):
+    img = HSVthresholding(img)
+    # Apply a Kernel 30x30
+    kernel = np.ones((5, 5), np.uint8)
+    opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+
+    return opening
+
+
 def main():
     input_video_file = '/home/karel/Documents/computervision/video_cv_small.mp4'
     # output_video_file = '/home/karel/Documents/computervision/AwesomeVideo.mp4'
@@ -38,7 +65,6 @@ def main():
             if cv2.waitKey(28) & 0xFF == ord('q'):
                 break
 
-            """
             elif between(cap,0,3) or between(cap,6,9):
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
@@ -62,7 +88,7 @@ def main():
                 cv2.putText(frame, 'bi-lateral', (20, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
                 cv2.putText(frame, ' d = 20 => more smoothing', (20, 500), font, 1, (0, 255, 255), 2, cv2.LINE_4)
             # can't start sooner
-            elif between(cap,33,40):
+            elif between(cap,33,35): # 40
                 # grabbing the object in HSV space
                 GREEN_MIN = np.array([50, 100, 100], np.uint8)
                 GREEN_MAX = np.array([70, 255, 255], np.uint8)
@@ -70,6 +96,18 @@ def main():
                 frame = cv2.inRange(frame, GREEN_MIN, GREEN_MAX)
                 frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
                 cv2.putText(frame, 'Capturing the object in HSV space', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+
+            elif between(cap,35,40):
+                # improving the grabbing
+                frame = dilate(frame)
+                frame = morphOp_Opening(frame)
+                GREEN_MIN = np.array([50, 100, 100], np.uint8)
+                GREEN_MAX = np.array([70, 255, 255], np.uint8)
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                frame = cv2.inRange(frame, GREEN_MIN, GREEN_MAX)
+                frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
+                cv2.putText(frame, 'Improved grabbing', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+
             elif between(cap,40,46):
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 # Show binary frames with the foreground object in white and background in black.
@@ -111,6 +149,8 @@ def main():
                 color = (randint(100, 255), randint(100, 255), randint(100, 255))
                 cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
                 cv2.putText(frame, 'Draw a box around the target', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
+
+            """
             elif between(cap,63,76):
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 template = cv2.imread("green2.jpg", 0)
@@ -125,7 +165,9 @@ def main():
                 for pt in zip(*loc[::-1]):
                     cv2.rectangle(frame, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
                 cv2.putText(frame, 'Detect object using features', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
-            elif between(cap, 76, 86):
+            """
+
+            if between(cap, 76, 86):
                 frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 frame_gray = cv2.blur(frame_gray, (3, 3))
                 detected_circles = cv2.HoughCircles(frame_gray, cv2.HOUGH_GRADIENT, 1, 20, param1=50, param2=30, minRadius=1,maxRadius=40)
@@ -136,18 +178,6 @@ def main():
                         color = (randint(100, 255), randint(100, 255), randint(100, 255))
                         cv2.circle(frame, (a, b), r, color, 2)
                 cv2.putText(frame, 'Draw flashy circles', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
-            """
-
-            if between(cap,0,90):
-                img = frame.copy()
-                template = cv2.imread('template.jpg', 0)
-                template = cv2.resize(template, (width, height))
-                template = cv2.cvtColor(template, cv2.COLOR_RGB2GRAY)
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                w, h = template.shape[::-1]
-                method = cv2.TM_SQDIFF_NORMED
-                res = cv2.matchTemplate(img, template, method)
-                min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
 
             """
             if between(cap,83,90): # 83
