@@ -2,10 +2,14 @@
 :copyright: (c) 2021, Joeri Nicolaes
 :license: BSD license
 """
+
+"""
+Script written by Karel Everaert
+Shows basic video processing techniques
+"""
 import cv2
 import numpy as np
 from random import randint
-
 
 # helper function to change what you do based on video seconds
 def between(cap, lower: int, upper: int) -> bool:
@@ -13,47 +17,8 @@ def between(cap, lower: int, upper: int) -> bool:
     framespersecond = int(cap.get(cv2.CAP_PROP_FPS))
     return lower <= int(2*frame/framespersecond) < upper
 
-def HSVthresholding(frame):
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    GREEN_MIN = np.array([50, 100, 100], np.uint8)
-    GREEN_MAX = np.array([70, 255, 255], np.uint8)
-    mask = cv2.inRange(hsv, GREEN_MIN, GREEN_MAX)
-    frame_ = cv2.bitwise_and(frame, frame, mask=mask)
-    return frame
-
-
-def MatchingOperation(img, templ='red.png', thres=0.9):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    template = cv2.imread(templ, 0)
-    w, h = template.shape[::-1]
-    method = cv2.TM_SQDIFF_NORMED
-    res = cv2.matchTemplate(gray, template, method)
-    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-    top_left = min_loc
-    bottom_right = (top_left[0] + w, top_left[1] + h)
-    cv2.rectangle(img, top_left, bottom_right, 255, 2)
-    threshold = thres
-    loc = np.where(res >= threshold)
-    for pt in zip(*loc[::-1]):
-        cv2.rectangle(img, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
-    return img
-
-
-def MatchingOperationRes(img, width=608, height=1080, templ='template.png'):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    template = cv2.imread(templ, 0)
-    dim = (width,height)
-    template = cv2.resize(template, dim, interpolation=cv2.INTER_AREA)
-    w, h = template.shape[::-1]
-    method = cv2.TM_SQDIFF_NORMED
-    # Apply template Matching
-    res = cv2.matchTemplate(gray, template, method)
-    res = cv2.resize(res, dim, interpolation=cv2.INTER_AREA)
-    return res
-
 def main():
     input_video_file = '/home/karel/Documents/computervision/video_cv_small.mp4'
-    # output_video_file = '/home/karel/Documents/computervision/AwesomeVideo.mp4'
     cap = cv2.VideoCapture(input_video_file)
 
     # Find width, height and Frames-per-second of the video
@@ -74,14 +39,15 @@ def main():
         if ret:
             if cv2.waitKey(28) & 0xFF == ord('q'):
                 break
-
             elif between(cap,0,3) or between(cap,6,9):
+                # changing between grayscale and colors
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
                 cv2.putText(frame, 'gray', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
             elif between(cap, 3, 6):
                 cv2.putText(frame, 'color', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
             elif between(cap,9,11):
+                # performing a gaussian blur with different sizes for the filter
                 frame = cv2.GaussianBlur(frame,(5,5),cv2.BORDER_DEFAULT)
                 cv2.putText(frame, 'GaussianBlur with kernel (5,5)', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
             elif between(cap,11,15):
@@ -89,6 +55,7 @@ def main():
                 cv2.putText(frame, 'GaussianBlur with kernel (11,11)', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
                 cv2.putText(frame, 'Bigger kernel = more smoothing', (50, 500), font, 1, (0, 255, 255), 2, cv2.LINE_4)
             elif between(cap,15,19):
+                # using a bilateral filter
                 frame = cv2.bilateralFilter(frame,15,80,80)
                 cv2.putText(frame, 'bi-lateral', (20, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
                 cv2.putText(frame, 'No averaging across edges', (50, 300), font, 1, (0, 255, 255), 2, cv2.LINE_4)
@@ -106,18 +73,21 @@ def main():
                 frame = cv2.inRange(frame, GREEN_MIN, GREEN_MAX)
                 frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
                 cv2.putText(frame, 'Capturing the object in HSV space', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
-            if between(cap,35,40): # start 35
+            elif between(cap,35,40): # start 35
                 # improving the grabbing
-
                 # dilation
-                frame = HSVthresholding(frame)
+                # thresholding
+                hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                GREEN_MIN = np.array([50, 100, 100], np.uint8)
+                GREEN_MAX = np.array([70, 255, 255], np.uint8)
+                mask = cv2.inRange(hsv, GREEN_MIN, GREEN_MAX)
+                frame = cv2.bitwise_and(frame, frame, mask=mask)
+
                 kernel = np.ones((5, 5), np.uint8)
                 frame = cv2.dilate(frame, kernel, iterations=1)
-
                 # morphological operations (Opening)
                 kernel = np.ones((5, 5), np.uint8)
                 frame = cv2.morphologyEx(frame, cv2.MORPH_OPEN, kernel)
-
                 GREEN_MIN = np.array([50, 100, 100], np.uint8)
                 GREEN_MAX = np.array([70, 255, 255], np.uint8)
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -164,12 +134,22 @@ def main():
                 color = (randint(100, 255), randint(100, 255), randint(100, 255))
                 cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
                 cv2.putText(frame, 'Draw a box around the target', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
-
-            if between(cap,58,63):
-                frame = MatchingOperation(frame)
-                # frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
-
-            if between(cap, 76, 86):
+            elif between(cap,58,70):
+                # showing the likelihood of where the object is in the picture
+                frame_w = width
+                frame_h = height
+                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                feature_img = cv2.imread('/home/karel/Documents/computervision/template.png')
+                feature_img = cv2.cvtColor(feature_img, cv2.COLOR_BGR2GRAY)
+                feature_img = cv2.resize(feature_img, (1536, 2048))
+                likelihood_map = cv2.matchTemplate(frame_gray, feature_img,cv2.TM_SQDIFF_NORMED)
+                likelihood_map = cv2.cvtColor(
+                    cv2.normalize(likelihood_map, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U),
+                    cv2.COLOR_GRAY2BGR)
+                likelihood_map = cv2.resize(likelihood_map, (frame_w, frame_h), interpolation=cv2.INTER_NEAREST)
+                frame = likelihood_map
+            elif between(cap, 76, 86):
+                # Drawing circles
                 frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 frame_gray = cv2.blur(frame_gray, (3, 3))
                 detected_circles = cv2.HoughCircles(frame_gray, cv2.HOUGH_GRADIENT, 1, 20, param1=50, param2=30, minRadius=1,maxRadius=40)
@@ -180,20 +160,8 @@ def main():
                         color = (randint(100, 255), randint(100, 255), randint(100, 255))
                         cv2.circle(frame, (a, b), r, color, 2)
                 cv2.putText(frame, 'Draw flashy circles', (50, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
-
-            """
-            if between(cap,83,90): # 83
-                # gray scale,with the intensity values proportional to the likelihood of the object of interest being at that location
-                frame_gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-                feature_img = cv2.imread('/home/karel/Documents/computervision/green.jpg')
-                feature_img = cv2.cvtColor(feature_img, cv2.COLOR_BGR2GRAY)
-                frame = cv2.matchTemplate(frame_gray,feature_img,cv2.TM_SQDIFF_NORMED) # error in this method
-
-                frame = np.uint8(frame)
-                # frame = cv2.cvtColor(frame, cv2.COLOR_HSV2BGR)
-            """
-
-            if between(cap,97,100):
+            elif between(cap,97,100):
+                # changing the colors of the white ball
                 cv2.putText(frame, 'Ball', (20, 50), font, 1, (0, 255, 255), 2, cv2.LINE_4)
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
